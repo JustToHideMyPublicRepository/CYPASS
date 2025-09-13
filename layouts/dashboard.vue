@@ -82,7 +82,8 @@
             <span v-if="!isCollapsed" class="ml-3">Paramètres</span>
           </NuxtLink>
 
-          <button @click="logout" class="w-full flex items-center px-3 py-2 rounded-md transition-colors text-red-700 hover:bg-red-100 border-t">
+          <button @click="logout"
+            class="w-full flex items-center px-3 py-2 rounded-md transition-colors text-red-700 hover:bg-red-100 border-t">
             <IconLogout class="h-6 w-6" />
             <span v-if="!isCollapsed" class="ml-3">Déconnexion</span>
           </button>
@@ -101,23 +102,29 @@
         <div class="flex items-center space-x-4">
           <div class="relative">
             <button @click="userMenuOpen = !userMenuOpen" class="flex items-center space-x-3 focus:outline-none">
-              <img v-if="userProfilePictureUrl" :src="userProfilePictureUrl" alt="User Avatar" class="h-8 w-8 rounded-full object-cover" />
-              <div v-else class="h-8 w-8 rounded-full bg-primary-600 text-white flex items-center justify-center font-medium">
+              <img v-if="userProfilePictureUrl" :src="userProfilePictureUrl" alt="User Avatar"
+                class="h-8 w-8 rounded-full object-cover" />
+              <div v-else
+                class="h-8 w-8 rounded-full bg-primary-600 text-white flex items-center justify-center font-medium">
                 {{ userInitials }}
               </div>
               <span class="text-sm font-medium text-gray-700">{{ userName }}</span>
             </button>
 
-            <div v-if="userMenuOpen" class="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none z-20">
+            <div v-if="userMenuOpen"
+              class="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none z-20">
               <div class="py-1" role="menu">
-                <NuxtLink to="/dashboard/profile" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" role="menuitem">
+                <NuxtLink to="/dashboard/profile" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                  role="menuitem">
                   Mon profil
                 </NuxtLink>
-                <NuxtLink to="/dashboard/settings" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" role="menuitem">
+                <NuxtLink to="/dashboard/settings" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                  role="menuitem">
                   Paramètres
                 </NuxtLink>
                 <div class="border-t border-gray-100"></div>
-                <button @click="logout" class="block w-full text-left px-4 py-2 text-sm text-red-700 hover:bg-red-100" role="menuitem">
+                <button @click="logout" class="block w-full text-left px-4 py-2 text-sm text-red-700 hover:bg-red-100"
+                  role="menuitem">
                   Se déconnecter
                 </button>
               </div>
@@ -126,7 +133,10 @@
         </div>
       </header>
 
-      <!-- Contenu défilant -->
+      <!-- Notification -->
+      <SiteNotificationManager />
+
+      <!-- Contenu -->
       <main class="p-6 overflow-y-auto" :style="{ height: 'calc(100vh - 4rem)' }">
         <slot />
       </main>

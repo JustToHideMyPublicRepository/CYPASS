@@ -1,3 +1,4 @@
+// stores/auth.ts
 import { defineStore } from 'pinia';
 import { useRuntimeConfig } from '#app';
 
@@ -158,26 +159,40 @@ export const useAuthStore = defineStore('auth', {
       }
     },
 
-    async updateProfile(profileData: Partial<User>) {
+    async updateProfile(profileData: Partial<User>, profilePictureFile: File | null = null) {
       const config = useRuntimeConfig();
       try {
+        let body: FormData | Partial<User>;
+        let headers: HeadersInit = {
+          'Authorization': `Bearer ${this.token}`,
+        };
+
+        if (profilePictureFile) {
+          // Si un fichier est fourni, utiliser FormData
+          body = new FormData();
+          for (const key in profileData) {
+            if (profileData[key] !== undefined) {
+              body.append(key, String(profileData[key]));
+            }
+          }
+          body.append('profilePicture', profilePictureFile);
+          // Ne pas définir Content-Type pour FormData, le navigateur le fera automatiquement avec la bonne boundary
+          delete headers['Content-Type'];
+        } else {
+          // Sinon, envoyer en JSON
+          body = profileData;
+          headers['Content-Type'] = 'application/json';
+        }
+
         const response = await $fetch<{ user: User }>(`${config.public.apiBaseUrl}/user/profile`, {
           method: 'PUT',
-          headers: {
-            'Authorization': `Bearer ${this.token}`,
-          },
-          body: profileData,
+          headers: headers,
+          body: body,
         });
 
         if (this.user) {
-          this.user.firstName = response.user.firstName;
-          this.user.lastName = response.user.lastName;
-          this.user.company = response.user.company;
-          this.user.jobTitle = response.user.jobTitle;
-          this.user.phone = response.user.phone;
-          this.user.bio = response.user.bio;
-          this.user.profilePictureUrl = response.user.profilePictureUrl;
-          this.user.status = response.user.status; 
+          // Mettre à jour uniquement les champs qui ont été modifiés
+          Object.assign(this.user, response.user);
         }
 
         if (process.client) {
@@ -252,3 +267,4 @@ export const useAuthStore = defineStore('auth', {
     }
   }
 });
+

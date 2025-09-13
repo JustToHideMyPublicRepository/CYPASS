@@ -14,18 +14,18 @@
           l'authentification de documents, l'audit de sites web et la détection proactive des menaces.
         </p>
         <div class="flex flex-col sm:flex-row justify-center gap-4 animate-slide-up delay-200">
-          <div class=" flex items-center gap-4">
+          <div class="flex flex-col sm:flex-row gap-4 w-full">
             <NuxtLink to="/modules/docsentry"
-              class="btn btn-primary text-lg px-8 py-4 transform hover:scale-105 transition-transform duration-300">
+              class="btn btn-primary text-lg px-8 py-4 w-full sm:w-auto transform hover:scale-105 transition-transform duration-300">
               Découvrir nos solutions
             </NuxtLink>
             <NuxtLink to="/auth/signup"
-              class="btn btn-outline text-lg px-8 py-4 transform hover:scale-105 transition-transform duration-300">
+              class="btn btn-outline text-lg px-8 py-4 w-full sm:w-auto transform hover:scale-105 transition-transform duration-300">
               Commencer gratuitement
             </NuxtLink>
           </div>
 
-          <div class="">
+          <div class="w-full sm:w-auto">
             <NuxtLink href="/verifier"
               class="w-full flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-primary-700 bg-primary-100 hover:bg-primary-200 md:py-4 md:text-lg md:px-10 transition duration-150 ease-in-out">
               Vérifier un document

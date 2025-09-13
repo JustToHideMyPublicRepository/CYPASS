@@ -97,7 +97,7 @@
         <div class="p-4">
           <h3 class="text-lg font-medium text-gray-900 mb-4">Changer la photo de profil</h3>
           <div class="flex flex-col items-center space-y-4 mb-6">
-            <img v-if="tempProfilePictureUrl" :src="tempProfilePictureUrl" alt="Aperçu"
+            <img v-if="previewProfilePictureUrl" :src="previewProfilePictureUrl" alt="Aperçu"
               class="h-24 w-24 rounded-full object-cover border-2 border-primary-500" />
             <div v-else
               class="h-24 w-24 rounded-full bg-primary-600 text-white flex items-center justify-center text-4xl font-medium border-2 border-primary-500">
@@ -106,14 +106,48 @@
             <p class="text-sm text-gray-500">Aperçu de votre nouvelle photo</p>
           </div>
 
-          <div>
-            <label for="newProfilePictureUrl" class="block text-sm font-medium text-gray-700">URL de la photo</label>
-            <input v-model="tempProfilePictureUrl" type="text" id="newProfilePictureUrl" class="input"
-              placeholder="Collez l'URL de votre image ici" />
-            <p v-if="profilePictureUrlError" class="mt-2 text-sm text-red-600">{{ profilePictureUrlError }}</p>
-            <p class="mt-2 text-sm text-gray-500">
-              Laissez vide pour utiliser l'image par défaut (initiales).
-            </p>
+          <div class="space-y-4">
+            <div>
+              <label for="file-upload" class="block text-sm font-medium text-gray-700">
+                Télécharger un fichier
+              </label>
+              <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
+                <div class="space-y-1 text-center">
+                  <IconPhoto class="mx-auto h-12 w-12 text-gray-400" />
+                  <div class="flex text-sm text-gray-600">
+                    <label for="file-upload"
+                      class="relative cursor-pointer bg-white rounded-md font-medium text-primary-600 hover:text-primary-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-primary-500">
+                      <span>Sélectionner un fichier</span>
+                      <input id="file-upload" name="file-upload" type="file" class="sr-only" accept="image/*"
+                        @change="onProfilePictureFileSelected">
+                    </label>
+                    <p class="pl-1">ou glisser-déposer</p>
+                  </div>
+                  <p class="text-xs text-gray-500">
+                    PNG, JPG, GIF, WebP jusqu'à 10MB
+                  </p>
+                  <p v-if="selectedProfilePictureFile" class="text-sm text-gray-700 mt-2">
+                    Fichier sélectionné: <span class="font-medium">{{ selectedProfilePictureFile.name }}</span>
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div class="relative flex py-5 items-center">
+              <div class="flex-grow border-t border-gray-300"></div>
+              <span class="flex-shrink mx-4 text-gray-400 text-sm">OU</span>
+              <div class="flex-grow border-t border-gray-300"></div>
+            </div>
+
+            <div>
+              <label for="newProfilePictureUrl" class="block text-sm font-medium text-gray-700">URL de la photo</label>
+              <input v-model="tempProfilePictureUrl" type="text" id="newProfilePictureUrl" class="input"
+                placeholder="Collez l'URL de votre image ici" @input="onTempProfilePictureUrlInput" />
+              <p v-if="profilePictureUrlError" class="mt-2 text-sm text-red-600">{{ profilePictureUrlError }}</p>
+              <p class="mt-2 text-sm text-gray-500">
+                Laissez vide pour utiliser l'image par défaut (initiales).
+              </p>
+            </div>
           </div>
 
           <div class="mt-6 flex justify-end space-x-3">
@@ -134,9 +168,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onUnmounted } from 'vue';
 import { useAuthStore } from '~/stores/auth';
-import { IconLoader } from '@tabler/icons-vue';
+import { IconLoader, IconPhoto } from '@tabler/icons-vue';
 import { VueFinalModal } from 'vue-final-modal';
 
 const authStore = useAuthStore();
@@ -147,6 +181,7 @@ const isSuccess = ref(false);
 // Modale photo de profil
 const showProfilePictureModal = ref(false);
 const tempProfilePictureUrl = ref('');
+const selectedProfilePictureFile = ref<File | null>(null); // Nouveau ref pour le fichier
 const profilePictureUrlError = ref('');
 
 let messageTimeout: NodeJS.Timeout | null = null;
@@ -187,6 +222,17 @@ const initialProfileData = {
 
 const profileData = ref({ ...initialProfileData });
 
+// Computed pour l'aperçu de la photo de profil dans la modale
+const previewProfilePictureUrl = computed(() => {
+  if (selectedProfilePictureFile.value) {
+    return URL.createObjectURL(selectedProfilePictureFile.value);
+  }
+  if (tempProfilePictureUrl.value) {
+    return tempProfilePictureUrl.value;
+  }
+  return profileData.value.profilePictureUrl; // Fallback to current profile picture
+});
+
 const resetProfileData = () => {
   profileData.value = { ...initialProfileData };
   message.value = ''; 
@@ -194,12 +240,14 @@ const resetProfileData = () => {
 
 const openProfilePictureModal = () => {
   tempProfilePictureUrl.value = profileData.value.profilePictureUrl || '';
+  selectedProfilePictureFile.value = null; // Réinitialiser le fichier sélectionné
   profilePictureUrlError.value = '';
   showProfilePictureModal.value = true;
 };
 
 const resetTempProfilePicture = () => {
   tempProfilePictureUrl.value = ''; 
+  selectedProfilePictureFile.value = null; // Réinitialiser le fichier sélectionné
   profilePictureUrlError.value = '';
 };
 
@@ -213,8 +261,44 @@ const isValidUrl = (url: string) => {
   }
 };
 
+const onProfilePictureFileSelected = (event: Event) => {
+  const input = event.target as HTMLInputElement;
+  if (input.files && input.files.length > 0) {
+    const file = input.files[0];
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    const maxSize = 10 * 1024 * 1024; // 10MB
+
+    if (!allowedTypes.includes(file.type)) {
+      profilePictureUrlError.value = 'Type de fichier non autorisé. Veuillez sélectionner une image (JPG, PNG, GIF, WebP).';
+      selectedProfilePictureFile.value = null;
+      input.value = ''; // Clear the input
+      return;
+    }
+
+    if (file.size > maxSize) {
+      profilePictureUrlError.value = 'Le fichier est trop volumineux. La taille maximale est de 10MB.';
+      selectedProfilePictureFile.value = null;
+      input.value = ''; // Clear the input
+      return;
+    }
+
+    selectedProfilePictureFile.value = file;
+    tempProfilePictureUrl.value = ''; // Clear URL if file is selected
+    profilePictureUrlError.value = '';
+  } else {
+    selectedProfilePictureFile.value = null;
+  }
+};
+
+const onTempProfilePictureUrlInput = () => {
+  // If user types in the URL field, clear the selected file
+  selectedProfilePictureFile.value = null;
+  profilePictureUrlError.value = ''; // Clear any previous file-related errors
+};
+
 const saveProfilePicture = async () => {
   profilePictureUrlError.value = '';
+
   if (tempProfilePictureUrl.value && !isValidUrl(tempProfilePictureUrl.value)) {
     profilePictureUrlError.value = 'Veuillez entrer une URL valide.';
     return;
@@ -225,16 +309,34 @@ const saveProfilePicture = async () => {
   isSuccess.value = false;
 
   try {
-    const dataToUpdate = {
-      profilePictureUrl: tempProfilePictureUrl.value,
-    };
+    let dataToUpdate: Partial<typeof profileData.value> = {};
+    let fileToUpload: File | null = null;
 
-    const result = await authStore.updateProfile(dataToUpdate);
+    if (selectedProfilePictureFile.value) {
+      // Si un fichier est sélectionné, c'est lui qui prime
+      fileToUpload = selectedProfilePictureFile.value;
+      // Les autres champs du profil sont envoyés séparément
+      dataToUpdate = { ...profileData.value };
+      // Supprimer profilePictureUrl de dataToUpdate car il sera géré par le fichier
+      delete dataToUpdate.profilePictureUrl;
+    } else {
+      // Si aucun fichier n'est sélectionné, utiliser l'URL ou la vider
+      dataToUpdate = {
+        ...profileData.value,
+        profilePictureUrl: tempProfilePictureUrl.value === '' ? null : tempProfilePictureUrl.value,
+      };
+    }
+
+    const result = await authStore.updateProfile(dataToUpdate, fileToUpload);
+
     if (result.success) {
       message.value = 'Photo de profil mise à jour avec succès !';
       isSuccess.value = true;
-      profileData.value.profilePictureUrl = tempProfilePictureUrl.value;
-      initialProfileData.profilePictureUrl = tempProfilePictureUrl.value;
+      // Mettre à jour les données initiales et le ref profileData avec la nouvelle URL du backend
+      if (result.user?.profilePictureUrl !== undefined) {
+        profileData.value.profilePictureUrl = result.user.profilePictureUrl;
+        initialProfileData.profilePictureUrl = result.user.profilePictureUrl;
+      }
       showProfilePictureModal.value = false;
     } else {
       message.value = result.message || 'Échec de la mise à jour de la photo de profil.';
@@ -253,6 +355,7 @@ const saveProfilePicture = async () => {
 const cancelProfilePictureEdit = () => {
   showProfilePictureModal.value = false;
   tempProfilePictureUrl.value = '';
+  selectedProfilePictureFile.value = null;
   profilePictureUrlError.value = '';
 };
 
@@ -290,4 +393,12 @@ const updateProfile = async () => {
     clearMessage();
   }
 };
+
+onUnmounted(() => {
+  // Nettoyer l'URL de l'objet pour éviter les fuites de mémoire
+  if (selectedProfilePictureFile.value && previewProfilePictureUrl.value) {
+    URL.revokeObjectURL(previewProfilePictureUrl.value);
+  }
+});
 </script>
+

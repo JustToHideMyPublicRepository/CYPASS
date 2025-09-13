@@ -54,6 +54,9 @@
       </div>
     </nav>
 
+    <!-- Notification -->
+    <SiteNotificationManager />
+
     <!-- Main Content -->
     <main class="pt-16"> 
       <slot />
