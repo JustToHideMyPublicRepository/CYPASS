@@ -82,7 +82,8 @@
               </div>
             </form>
 
-            <div v-if="message" :class="{ 'bg-green-50 text-green-800': isSuccess, 'bg-red-50 text-red-800': !isSuccess }"
+            <div v-if="message"
+              :class="{ 'bg-green-50 text-green-800': isSuccess, 'bg-red-50 text-red-800': !isSuccess }"
               class="mt-4 p-4 rounded-md">
               <p class="text-sm font-medium">{{ message }}</p>
             </div>
@@ -92,10 +93,11 @@
 
       <!-- Modale de changement de photo de profil -->
       <VueFinalModal v-model="showProfilePictureModal" :esc-to-close="true" :click-to-close="true"
-        classes="flex justify-center items-center"
-        content-class="relative flex flex-col max-h-full mx-4 p-4 border dark:border-gray-800 rounded-lg bg-white dark:bg-gray-900 w-full max-w-md">
+        class="flex justify-center items-center"
+        content-class="relative flex flex-col max-h-[90vh] mx-4 p-6 border-none rounded-lg bg-white w-full max-w-lg shadow-xl overflow-y-auto"
+        overlay-class="fixed inset-0 bg-black bg-opacity-50">
         <div class="p-4">
-          <h3 class="text-lg font-medium text-gray-900 mb-4">Changer la photo de profil</h3>
+          <h3 class="text-xl font-semibold text-gray-900 mb-4">Changer la photo de profil</h3>
           <div class="flex flex-col items-center space-y-4 mb-6">
             <img v-if="previewProfilePictureUrl" :src="previewProfilePictureUrl" alt="Aperçu"
               class="h-24 w-24 rounded-full object-cover border-2 border-primary-500" />
@@ -181,7 +183,7 @@ const isSuccess = ref(false);
 // Modale photo de profil
 const showProfilePictureModal = ref(false);
 const tempProfilePictureUrl = ref('');
-const selectedProfilePictureFile = ref<File | null>(null); // Nouveau ref pour le fichier
+const selectedProfilePictureFile = ref<File | null>(null);
 const profilePictureUrlError = ref('');
 
 let messageTimeout: NodeJS.Timeout | null = null;
@@ -192,7 +194,7 @@ const clearMessage = () => {
   }
   messageTimeout = setTimeout(() => {
     message.value = '';
-  }, 5000); 
+  }, 5000);
 };
 
 const userInitials = computed(() => {
@@ -208,21 +210,21 @@ const userInitials = computed(() => {
   return 'U';
 });
 
-// Initialiser profileData avec les valeurs actuelles de l'utilisateur
+//Valeurs actuelles de l'utilisateur
 const initialProfileData = {
-  firstName: authStore.user?.firstName || '',
-  lastName: authStore.user?.lastName || '',
-  emailAddress: authStore.user?.emailAddress || '', 
-  phone: authStore.user?.phone || '',
-  company: authStore.user?.company || '',
-  jobTitle: authStore.user?.jobTitle || '',
-  bio: authStore.user?.bio || '',
-  profilePictureUrl: authStore.user?.profilePictureUrl || '',
+  firstName: authStore.user?.firstName ?? '',
+  lastName: authStore.user?.lastName ?? '',
+  emailAddress: authStore.user?.emailAddress ?? '',
+  phone: authStore.user?.phone ?? null,
+  company: authStore.user?.company ?? null,
+  jobTitle: authStore.user?.jobTitle ?? null,
+  bio: authStore.user?.bio ?? null,
+  profilePictureUrl: authStore.user?.profilePictureUrl ?? null,
 };
 
 const profileData = ref({ ...initialProfileData });
 
-// Computed pour l'aperçu de la photo de profil dans la modale
+// Aperçu de la photo de profil dans la modale
 const previewProfilePictureUrl = computed(() => {
   if (selectedProfilePictureFile.value) {
     return URL.createObjectURL(selectedProfilePictureFile.value);
@@ -230,29 +232,29 @@ const previewProfilePictureUrl = computed(() => {
   if (tempProfilePictureUrl.value) {
     return tempProfilePictureUrl.value;
   }
-  return profileData.value.profilePictureUrl; // Fallback to current profile picture
+  return profileData.value.profilePictureUrl;
 });
 
 const resetProfileData = () => {
   profileData.value = { ...initialProfileData };
-  message.value = ''; 
+  message.value = '';
 };
 
 const openProfilePictureModal = () => {
   tempProfilePictureUrl.value = profileData.value.profilePictureUrl || '';
-  selectedProfilePictureFile.value = null; // Réinitialiser le fichier sélectionné
+  selectedProfilePictureFile.value = null;
   profilePictureUrlError.value = '';
   showProfilePictureModal.value = true;
 };
 
 const resetTempProfilePicture = () => {
-  tempProfilePictureUrl.value = ''; 
-  selectedProfilePictureFile.value = null; // Réinitialiser le fichier sélectionné
+  tempProfilePictureUrl.value = '';
+  selectedProfilePictureFile.value = null;
   profilePictureUrlError.value = '';
 };
 
 const isValidUrl = (url: string) => {
-  if (!url) return true; 
+  if (!url) return true;
   try {
     new URL(url);
     return true;
@@ -266,24 +268,24 @@ const onProfilePictureFileSelected = (event: Event) => {
   if (input.files && input.files.length > 0) {
     const file = input.files[0];
     const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-    const maxSize = 10 * 1024 * 1024; // 10MB
+    const maxSize = 10 * 1024 * 1024;
 
     if (!allowedTypes.includes(file.type)) {
       profilePictureUrlError.value = 'Type de fichier non autorisé. Veuillez sélectionner une image (JPG, PNG, GIF, WebP).';
       selectedProfilePictureFile.value = null;
-      input.value = ''; // Clear the input
+      input.value = '';
       return;
     }
 
     if (file.size > maxSize) {
       profilePictureUrlError.value = 'Le fichier est trop volumineux. La taille maximale est de 10MB.';
       selectedProfilePictureFile.value = null;
-      input.value = ''; // Clear the input
+      input.value = '';
       return;
     }
 
     selectedProfilePictureFile.value = file;
-    tempProfilePictureUrl.value = ''; // Clear URL if file is selected
+    tempProfilePictureUrl.value = '';
     profilePictureUrlError.value = '';
   } else {
     selectedProfilePictureFile.value = null;
@@ -291,9 +293,8 @@ const onProfilePictureFileSelected = (event: Event) => {
 };
 
 const onTempProfilePictureUrlInput = () => {
-  // If user types in the URL field, clear the selected file
   selectedProfilePictureFile.value = null;
-  profilePictureUrlError.value = ''; // Clear any previous file-related errors
+  profilePictureUrlError.value = '';
 };
 
 const saveProfilePicture = async () => {
@@ -313,14 +314,10 @@ const saveProfilePicture = async () => {
     let fileToUpload: File | null = null;
 
     if (selectedProfilePictureFile.value) {
-      // Si un fichier est sélectionné, c'est lui qui prime
       fileToUpload = selectedProfilePictureFile.value;
-      // Les autres champs du profil sont envoyés séparément
       dataToUpdate = { ...profileData.value };
-      // Supprimer profilePictureUrl de dataToUpdate car il sera géré par le fichier
       delete dataToUpdate.profilePictureUrl;
     } else {
-      // Si aucun fichier n'est sélectionné, utiliser l'URL ou la vider
       dataToUpdate = {
         ...profileData.value,
         profilePictureUrl: tempProfilePictureUrl.value === '' ? null : tempProfilePictureUrl.value,
@@ -332,7 +329,6 @@ const saveProfilePicture = async () => {
     if (result.success) {
       message.value = 'Photo de profil mise à jour avec succès !';
       isSuccess.value = true;
-      // Mettre à jour les données initiales et le ref profileData avec la nouvelle URL du backend
       if (result.user?.profilePictureUrl !== undefined) {
         profileData.value.profilePictureUrl = result.user.profilePictureUrl;
         initialProfileData.profilePictureUrl = result.user.profilePictureUrl;
@@ -372,7 +368,7 @@ const updateProfile = async () => {
       company: profileData.value.company,
       jobTitle: profileData.value.jobTitle,
       bio: profileData.value.bio,
-      // profilePictureUrl n'est pas inclus ici car il est géré par la modale dédiée
+      // profilePictureUrl est géré par la modale
     };
 
     const result = await authStore.updateProfile(dataToUpdate);
@@ -395,10 +391,8 @@ const updateProfile = async () => {
 };
 
 onUnmounted(() => {
-  // Nettoyer l'URL de l'objet pour éviter les fuites de mémoire
   if (selectedProfilePictureFile.value && previewProfilePictureUrl.value) {
     URL.revokeObjectURL(previewProfilePictureUrl.value);
   }
 });
 </script>
-

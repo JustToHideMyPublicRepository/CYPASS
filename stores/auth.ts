@@ -1,4 +1,3 @@
-// stores/auth.ts
 import { defineStore } from 'pinia';
 import { useRuntimeConfig } from '#app';
 
@@ -7,11 +6,11 @@ interface User {
   firstName: string;
   lastName: string;
   emailAddress: string;
-  phone: string;
-  company?: string;
-  jobTitle?: string;
-  bio?: string;
-  profilePictureUrl?: string;
+  phone: string | null;
+  company?: string | null;
+  jobTitle?: string | null;
+  bio?: string | null;
+  profilePictureUrl?: string | null;
   status: 'pending' | 'active' | 'inactive' | 'suspended' | 'deleted' | 'admin';
   isEmailVerified: boolean;
   twoFactorEnabled?: boolean;
@@ -168,38 +167,35 @@ export const useAuthStore = defineStore('auth', {
         };
 
         if (profilePictureFile) {
-          // Si un fichier est fourni, utiliser FormData
           body = new FormData();
           for (const key in profileData) {
-            if (profileData[key] !== undefined) {
-              body.append(key, String(profileData[key]));
+            const typedKey = key as keyof Partial<User>;
+            if (profileData[typedKey] !== undefined && profileData[typedKey] !== null) {
+              body.append(typedKey, String(profileData[typedKey]));
             }
           }
           body.append('profilePicture', profilePictureFile);
-          // Ne pas définir Content-Type pour FormData, le navigateur le fera automatiquement avec la bonne boundary
           delete headers['Content-Type'];
         } else {
-          // Sinon, envoyer en JSON
           body = profileData;
           headers['Content-Type'] = 'application/json';
         }
 
-        const response = await $fetch<{ user: User }>(`${config.public.apiBaseUrl}/user/profile`, {
+        const response = await $fetch<{ data: User }>(`${config.public.apiBaseUrl}/user/profile`, {
           method: 'PUT',
           headers: headers,
           body: body,
         });
 
-        if (this.user) {
-          // Mettre à jour uniquement les champs qui ont été modifiés
-          Object.assign(this.user, response.user);
+        if (this.user && response.data) {
+          Object.assign(this.user, response.data);
         }
 
         if (process.client) {
           localStorage.setItem('user', JSON.stringify(this.user));
           sessionStorage.setItem('user', JSON.stringify(this.user));
         }
-        return { success: true, user: response.user };
+        return { success: true, user: response.data };
       } catch (error: any) {
         console.error('Update profile error:', error);
         return { success: false, message: error.data?.message || 'Erreur lors de la mise à jour du profil.' };
@@ -234,7 +230,7 @@ export const useAuthStore = defineStore('auth', {
       }
     },
 
-    initAuth() {
+    async initAuth() {
       if (process.client) {
         try {
           let user = null;
@@ -267,4 +263,3 @@ export const useAuthStore = defineStore('auth', {
     }
   }
 });
-
