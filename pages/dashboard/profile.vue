@@ -82,8 +82,7 @@
               </div>
             </form>
 
-            <div v-if="message"
-              :class="{ 'bg-green-50 text-green-800': isSuccess, 'bg-red-50 text-red-800': !isSuccess }"
+            <div v-if="message" :class="{ 'bg-green-50 text-green-800': isSuccess, 'bg-red-50 text-red-800': !isSuccess }"
               class="mt-4 p-4 rounded-md">
               <p class="text-sm font-medium">{{ message }}</p>
             </div>
@@ -92,10 +91,14 @@
       </div>
 
       <!-- Modale de changement de photo de profil -->
-      <VueFinalModal v-model="showProfilePictureModal" :esc-to-close="true" :click-to-close="true"
+      <VueFinalModal
+        v-model="showProfilePictureModal"
+        :esc-to-close="true"
+        :click-to-close="true"
         class="flex justify-center items-center"
         content-class="relative flex flex-col max-h-[90vh] mx-4 p-6 border-none rounded-lg bg-white w-full max-w-lg shadow-xl overflow-y-auto"
-        overlay-class="fixed inset-0 bg-black bg-opacity-50">
+        overlay-class="fixed inset-0 bg-black bg-opacity-50"
+      >
         <div class="p-4">
           <h3 class="text-xl font-semibold text-gray-900 mb-4">Changer la photo de profil</h3>
           <div class="flex flex-col items-center space-y-4 mb-6">
@@ -194,7 +197,7 @@ const clearMessage = () => {
   }
   messageTimeout = setTimeout(() => {
     message.value = '';
-  }, 5000);
+  }, 5000); 
 };
 
 const userInitials = computed(() => {
@@ -210,7 +213,7 @@ const userInitials = computed(() => {
   return 'U';
 });
 
-//Valeurs actuelles de l'utilisateur
+// Valeurs actuelles de l'utilisateur
 const initialProfileData = {
   firstName: authStore.user?.firstName ?? '',
   lastName: authStore.user?.lastName ?? '',
@@ -237,7 +240,7 @@ const previewProfilePictureUrl = computed(() => {
 
 const resetProfileData = () => {
   profileData.value = { ...initialProfileData };
-  message.value = '';
+  message.value = ''; 
 };
 
 const openProfilePictureModal = () => {
@@ -248,13 +251,13 @@ const openProfilePictureModal = () => {
 };
 
 const resetTempProfilePicture = () => {
-  tempProfilePictureUrl.value = '';
+  tempProfilePictureUrl.value = ''; 
   selectedProfilePictureFile.value = null;
   profilePictureUrlError.value = '';
 };
 
 const isValidUrl = (url: string) => {
-  if (!url) return true;
+  if (!url) return true; 
   try {
     new URL(url);
     return true;

@@ -24,10 +24,7 @@
             <!-- Si connecté, menu utilisateur -->
             <div v-else class="relative">
               <button @click="userMenuOpen = !userMenuOpen" class="flex items-center space-x-3 focus:outline-none">
-                <img v-if="userProfilePictureUrl" :src="userProfilePictureUrl" alt="User Avatar" class="h-8 w-8 rounded-full object-cover" />
-                <div v-else class="h-8 w-8 rounded-full bg-primary-600 text-white flex items-center justify-center font-medium">
-                  {{ userInitials }}
-                </div>
+                <img :src="userProfilePictureUrl" alt="User Avatar" class="h-8 w-8 rounded-full object-cover" />
                 <span class="text-sm font-medium text-gray-700">{{ userName }}</span>
               </button>
 
@@ -53,9 +50,6 @@
         </div>
       </div>
     </nav>
-
-    <!-- Notification -->
-    <SiteNotificationManager />
 
     <!-- Main Content -->
     <main class="pt-16"> 
@@ -109,20 +103,7 @@ const userMenuOpen = ref(false);
 
 const isAuthenticated = computed(() => authStore.isAuthenticated);
 const userName = computed(() => authStore.user?.firstName || authStore.user?.emailAddress || 'Utilisateur');
-const userInitials = computed(() => {
-  if (authStore.user?.firstName && authStore.user?.lastName) {
-    return `${authStore.user.firstName[0]}${authStore.user.lastName[0]}`.toUpperCase();
-  }
-  if (authStore.user?.firstName) {
-    return authStore.user.firstName[0].toUpperCase();
-  }
-  if (authStore.user?.emailAddress) {
-    return authStore.user.emailAddress[0].toUpperCase();
-  }
-  return 'U';
-});
-
-const userProfilePictureUrl = computed(() => authStore.user?.profilePictureUrl);
+const userProfilePictureUrl = computed(() => authStore.user?.profilePictureUrl || '/img/default-profil.png');
 
 const logout = () => {
   authStore.logout();

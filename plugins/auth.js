@@ -1,12 +1,8 @@
-export default defineNuxtPlugin({
-  name: 'auth',
-  enforce: 'post',
-  async setup() {
+import { useAuthStore } from '~/stores/auth';
+
+export default defineNuxtPlugin(async () => {
+  if (process.client) {
     const authStore = useAuthStore();
-    
-    // Only initialize auth from localStorage on client-side
-    if (process.client) {
-      await authStore.initAuth();
-    }
+    await authStore.initAuth();
   }
 });
