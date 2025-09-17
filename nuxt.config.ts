@@ -13,7 +13,6 @@ export default defineNuxtConfig({
     public: {
       apiBaseUrl: process.env.CYPASS_API_URL,
       betaMode: process.env.NUXT_BETA_MODE === 'true',
-      siteIdentifier: process.env.NUXT_PUBLIC_SITE_IDENTIFIER || 'cypass',
     }
   },
   

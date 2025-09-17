@@ -26,7 +26,7 @@
       <div class="bg-white shadow-sm rounded-lg p-6">
         <h2 class="text-lg font-medium text-gray-900 mb-4">Mes documents authentifiés</h2>
         
-        <div v-if="userDocuments.length === 0" class="text-center py-10">
+        <div v-if="userDocuments.length === 0 && !documentsStore.loading" class="text-center py-10">
           <IconFileCertificate class="mx-auto h-12 w-12 text-gray-400" />
           <h3 class="mt-2 text-sm font-medium text-gray-900">Aucun document</h3>
           <p class="mt-1 text-sm text-gray-500">Commencez par ajouter votre premier document à authentifier.</p>
@@ -39,6 +39,11 @@
               Authentifier un document
             </button>
           </div>
+        </div>
+
+        <div v-else-if="documentsStore.loading" class="text-center py-10">
+          <IconLoader class="animate-spin h-10 w-10 text-primary-600 mx-auto" />
+          <p class="mt-4 text-lg text-gray-600">Chargement des documents...</p>
         </div>
         
         <div v-else class="overflow-x-auto">
@@ -56,7 +61,7 @@
                 <td class="px-6 py-4 whitespace-nowrap">
                   <div class="flex items-center">
                     <IconFileCertificate class="h-5 w-5 text-gray-400 mr-2" />
-                    <div class="text-sm font-medium text-gray-900">{{ doc.filename }}</div>
+                    <div class="text-sm font-medium text-gray-900">{{ doc.originalName }}</div>
                   </div>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
@@ -70,7 +75,7 @@
                     <button @click="viewDocument(doc)" class="text-primary-600 hover:text-primary-900">
                       Voir
                     </button>
-                    <button @click="downloadCertificate(doc)" class="text-secondary-600 hover:text-secondary-900">
+                    <button @click="downloadCertificate(doc.id)" class="text-secondary-600 hover:text-secondary-900">
                       Télécharger
                     </button>
                   </div>
@@ -140,20 +145,21 @@
                   </button>
                 </div>
               </div>
+              <div v-if="uploadError" class="mt-4 text-sm text-red-600">{{ uploadError }}</div>
             </div>
           </div>
           
           <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
             <button 
               @click="authenticateDocument" 
-              :disabled="!selectedFile || processing"
+              :disabled="!selectedFile || processing || !!uploadError"
               class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-primary-600 text-base font-medium text-white hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <span v-if="processing">Traitement...</span>
               <span v-else>Authentifier</span>
             </button>
             <button 
-              @click="showUploadModal = false" 
+              @click="showUploadModal = false; selectedFile = null; uploadError = '';" 
               class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
             >
               Annuler
@@ -190,15 +196,15 @@
               </div>
             </div>
             
-            <div class="mt-5">
+            <div class="mt-5" v-if="newDocument">
               <div class="mb-4">
                 <h4 class="text-sm font-medium text-gray-700">Informations d'authentification</h4>
                 <div class="mt-2 bg-gray-50 p-3 rounded-md">
                   <p class="text-sm text-gray-600">
-                    <span class="font-medium">Hash:</span> {{ newDocHash }}
+                    <span class="font-medium">Hash:</span> {{ newDocument.hash }}
                   </p>
                   <p class="text-sm text-gray-600 mt-1">
-                    <span class="font-medium">Date:</span> {{ formatDateTime(new Date().toISOString()) }}
+                    <span class="font-medium">Date:</span> {{ formatDateTime(newDocument.createdAt) }}
                   </p>
                 </div>
               </div>
@@ -206,7 +212,7 @@
               <div>
                 <h4 class="text-sm font-medium text-gray-700">QR Code de vérification</h4>
                 <div class="mt-2 flex items-center justify-center">
-                  <img :src="newDocQrCode" alt="QR Code" class="h-32 w-32" />
+                  <img :src="newDocument.qrCodeUrl" alt="QR Code" class="h-32 w-32" />
                 </div>
                 <p class="mt-2 text-sm text-gray-500 text-center">
                   Scannez ce code pour vérifier l'authenticité du document.
@@ -217,13 +223,13 @@
           
           <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
             <button 
-              @click="downloadCertificate(newDocument)" 
+              @click="downloadCertificate(newDocument?.id)" 
               class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-primary-600 text-base font-medium text-white hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 sm:ml-3 sm:w-auto sm:text-sm"
             >
               Télécharger le certificat
             </button>
             <button 
-              @click="showSuccessModal = false" 
+              @click="showSuccessModal = false; newDocument = null;" 
               class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
             >
               Fermer
@@ -235,12 +241,13 @@
   </div>
 </template>
 
-<script setup>
-import { ref, computed } from 'vue';
+<script setup lang="ts">
+import { ref, computed, onMounted } from 'vue';
 import { useAuthStore } from '~/stores/auth';
 import { useDocumentsStore } from '~/stores/documents';
-import aboutDocSentry from '~/components/modAbout/aboutDocSentry';
-import { IconShieldCheck, IconUpload, IconFileCertificate, IconX, IconCheck } from '@tabler/icons-vue';
+import aboutDocSentry from '~/components/modAbout/aboutDocSentry.vue'; // Corrected import
+import { IconShieldCheck, IconUpload, IconFileCertificate, IconX, IconCheck, IconLoader } from '@tabler/icons-vue';
+import type { Document } from '~/types';
 
 // Stores
 const authStore = useAuthStore();
@@ -249,20 +256,30 @@ const documentsStore = useDocumentsStore();
 // État local
 const showUploadModal = ref(false);
 const showSuccessModal = ref(false);
-const selectedFile = ref(null);
+const selectedFile = ref<File | null>(null);
 const processing = ref(false);
-const newDocument = ref(null);
-const newDocHash = ref('');
-const newDocQrCode = ref('');
+const newDocument = ref<Document | null>(null);
+const uploadError = ref('');
 
 // Récupérer les documents de l'utilisateur
 const user = computed(() => authStore.user);
-const userDocuments = computed(() => documentsStore.getUserDocuments(user.value?.id || 0));
+const userDocuments = computed(() => documentsStore.getUserDocuments(user.value?.id || '')); // Corrected default value for id
+
+onMounted(() => {
+  if (user.value?.id) {
+    documentsStore.fetchUserDocuments();
+  }
+});
 
 // Gestion de l'upload de fichier
-const onFileSelected = (event) => {
-  const file = event.target.files[0];
-  if (!file) return;
+const onFileSelected = (event: Event) => {
+  const input = event.target as HTMLInputElement;
+  const file = input.files?.[0];
+  if (!file) {
+    selectedFile.value = null;
+    uploadError.value = '';
+    return;
+  }
   
   // Vérifier le type et la taille du fichier
   const allowedTypes = [
@@ -276,78 +293,73 @@ const onFileSelected = (event) => {
   ];
   
   if (!allowedTypes.includes(file.type)) {
-    alert('Type de fichier non pris en charge. Veuillez télécharger un document PDF, Word, Excel ou PowerPoint.');
+    uploadError.value = 'Type de fichier non pris en charge. Seuls les documents PDF, Word, Excel et PowerPoint sont acceptés.';
+    selectedFile.value = null;
     return;
   }
   
   if (file.size > 10 * 1024 * 1024) { // 10MB
-    alert('Le fichier est trop volumineux. La taille maximale est de 10MB.');
+    uploadError.value = 'Le fichier est trop volumineux. La taille maximale est de 10MB.';
+    selectedFile.value = null;
     return;
   }
   
   selectedFile.value = file;
+  uploadError.value = '';
 };
 
 // Authentifier un document
 const authenticateDocument = async () => {
-  if (!selectedFile.value) return;
+  if (!selectedFile.value || !user.value?.id) return;
   
   processing.value = true;
+  uploadError.value = '';
   
   try {
-    // Simuler le calcul du hash
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    const metadata = {
+      author: user.value.firstName + ' ' + user.value.lastName,
+      organization: user.value.company || 'N/A',
+      department: user.value.jobTitle || 'N/A',
+    };
+
+    const result = await documentsStore.authenticateDocument(selectedFile.value, metadata);
     
-    // Générer un hash aléatoire pour simulation
-    const hash = Array.from({ length: 64 }, () => 
-      "0123456789abcdef"[Math.floor(Math.random() * 16)]
-    ).join('');
-    
-    // Créer le nouveau document
-    const newDoc = documentsStore.addDocument({
-      filename: selectedFile.value.name,
-      type: selectedFile.value.type,
-      hash,
-      userId: user.value.id
-    });
-    
-    newDocument.value = newDoc;
-    newDocHash.value = hash;
-    newDocQrCode.value = newDoc.qrCode;
-    
-    // Fermer le modal d'upload et afficher le modal de succès
-    showUploadModal.value = false;
-    showSuccessModal.value = true;
-    selectedFile.value = null;
-  } catch (error) {
+    if (result.success && result.document) {
+      newDocument.value = result.document;
+      showUploadModal.value = false;
+      showSuccessModal.value = true;
+      selectedFile.value = null;
+    } else {
+      uploadError.value = result.message || 'Échec de l\'authentification du document.';
+      if (result.existingDocument) {
+        uploadError.value += ` Ce document a déjà été authentifié le ${formatDateTime(result.existingDocument.createdAt)}.`;
+      }
+    }
+  } catch (error: any) {
     console.error('Erreur lors de l\'authentification du document', error);
-    alert('Une erreur s\'est produite lors de l\'authentification du document. Veuillez réessayer.');
+    uploadError.value = error.message || 'Une erreur s\'est produite lors de l\'authentification du document. Veuillez réessayer.';
   } finally {
     processing.value = false;
   }
 };
 
 // Voir les détails d'un document
-const viewDocument = (doc) => {
+const viewDocument = (doc: Document) => {
   newDocument.value = doc;
-  newDocHash.value = doc.hash;
-  newDocQrCode.value = doc.qrCode;
   showSuccessModal.value = true;
 };
 
 // Télécharger le certificat
-const downloadCertificate = async (doc) => {
-  try {
-    const pdf = generateCertificate(doc);
-    pdf.save(`certificat-${doc.filename}.pdf`);
-  } catch (error) {
-    console.error('Erreur lors de la génération du certificat:', error);
-    alert('Une erreur s\'est produite lors de la génération du certificat');
+const downloadCertificate = async (docId?: string) => {
+  if (!docId) return;
+  const result = await documentsStore.downloadCertificate(docId);
+  if (!result.success) {
+    alert(result.message);
   }
 };
 
 // Formater les dates
-const formatDateTime = (dateString) => {
+const formatDateTime = (dateString: string) => {
   return new Intl.DateTimeFormat('fr-FR', { 
     day: 'numeric', 
     month: 'long', 
@@ -358,7 +370,7 @@ const formatDateTime = (dateString) => {
 };
 
 // Tronquer le hash pour l'affichage
-const truncateHash = (hash) => {
+const truncateHash = (hash: string) => {
   if (!hash) return '';
   return `${hash.substring(0, 8)}...${hash.substring(hash.length - 8)}`;
 };

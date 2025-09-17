@@ -2,7 +2,7 @@ import { defineStore } from 'pinia';
 import { useRuntimeConfig } from '#app';
 
 interface User {
-  id: number;
+  id: string;
   firstName: string;
   lastName: string;
   emailAddress: string;

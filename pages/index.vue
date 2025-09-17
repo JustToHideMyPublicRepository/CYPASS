@@ -13,24 +13,19 @@
           La première plateforme béninoise souveraine de cybersécurité, offrant des solutions avancées pour
           l'authentification de documents, l'audit de sites web et la détection proactive des menaces.
         </p>
-        <div class="flex flex-col sm:flex-row justify-center gap-4 animate-slide-up delay-200">
-          <div class="flex flex-col sm:flex-row gap-4 w-full">
-            <NuxtLink to="/modules/docsentry"
-              class="btn btn-primary text-lg px-8 py-4 w-full sm:w-auto transform hover:scale-105 transition-transform duration-300">
-              Découvrir nos solutions
-            </NuxtLink>
-            <NuxtLink to="/auth/signup"
-              class="btn btn-outline text-lg px-8 py-4 w-full sm:w-auto transform hover:scale-105 transition-transform duration-300">
-              Commencer gratuitement
-            </NuxtLink>
-          </div>
-
-          <div class="w-full sm:w-auto">
-            <NuxtLink href="/verifier"
-              class="w-full flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-primary-700 bg-primary-100 hover:bg-primary-200 md:py-4 md:text-lg md:px-10 transition duration-150 ease-in-out">
-              Vérifier un document
-            </NuxtLink>
-          </div>
+        <div class="flex flex-col md:flex-row justify-center items-stretch gap-4 animate-slide-up delay-200">
+          <NuxtLink to="/modules/docsentry"
+            class="btn btn-primary text-lg px-8 py-4 w-full md:w-auto transform hover:scale-105 transition-transform duration-300 flex-1">
+            Découvrir nos solutions
+          </NuxtLink>
+          <NuxtLink to="/auth/signup"
+            class="btn btn-outline text-lg px-8 py-4 w-full md:w-auto transform hover:scale-105 transition-transform duration-300 flex-1">
+            Commencer gratuitement
+          </NuxtLink>
+          <NuxtLink href="/verifier"
+            class="w-full md:w-auto flex-1 flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-primary-700 bg-primary-100 hover:bg-primary-200 md:py-4 md:text-lg md:px-10 transition duration-150 ease-in-out">
+            Vérifier un document
+          </NuxtLink>
         </div>
       </div>
     </section>
@@ -39,7 +34,7 @@
     <section class="py-24 bg-gray-50">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
         <h2 class="text-4xl font-extrabold text-gray-900 mb-4">Une solution complète pour votre sécurité</h2>
-        <p class="text-xl text-gray-600 mb-16">Des outils puissants pour pour protéger vos actifs numériques.</p>
+        <p class="text-xl text-gray-600 mb-16">Des outils puissants pour protéger vos actifs numériques.</p>
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           <div v-for="(module, index) in modules" :key="index"
             class="group bg-white rounded-lg shadow-lg p-8 border border-gray-100 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 animate-fade-in animate-slide-up"
@@ -129,7 +124,7 @@
 </template>
 
 <script setup>
-import { IconFileCheck, IconShieldCheck, IconAlertCircle, IconEyeCheck, IconArrowRight } from '@tabler/icons-vue';
+import { IconFileCheck, IconShieldCheck, IconAlertCircle, IconEyeCheck, IconArrowRight, IconArrowLeft } from '@tabler/icons-vue';
 
 const modules = [
   {

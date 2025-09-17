@@ -1,46 +1,44 @@
 
 // ===============================================
-// SITE INFO
+// DOCUMENTS
 // ===============================================
-export interface SiteInfo {
+export interface Document {
   id: string;
-  title: string;
+  filename: string;
+  originalName: string;
+  mimeType: string;
+  size: number;
+  hash: string;
+  filePath?: string;
+  qrCodeUrl?: string;
+  verificationUrl?: string;
+  status: 'pending' | 'verified' | 'failed' | 'deleted';
+  metadata: {
+    author?: string;
+    organization?: string;
+    department?: string;
+    [key: string]: any; 
+  };
+  userId: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Pagination {
+  currentPage: number;
+  itemsPerPage: number;
+  totalItems: number;
+  totalPages: number;
+}
+
+export interface DocumentVerificationResult {
+  verified: boolean;
   message: string;
-  targetSites: string[]; // Ex: ['all', 'pgs']
-  displayType: 'banner' | 'modal' | 'popup' | 'toast';
-  position: 'top' | 'bottom' | 'center' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
-  animationSettings: {
-    type: 'slideDown' | string; 
-    duration: number;
-    autoHide: boolean;
-    autoHideDelay: number;
+  document?: Document;
+  hash?: string;
+  uploadedFile?: { 
+    filename: string;
+    size: number;
+    type: string;
   };
-  stylesSettings: {
-    backgroundColor: string;
-    textColor: string;
-    linkColor: string;
-    borderColor: string;
-    fontSize: string;
-    fontWeight: string;
-  };
-  showCloseButton: boolean;
-  showDismissButton: boolean;
-  linkSettings: {
-    openInNewTab: boolean;
-    underline: boolean;
-  };
-  links: Array<{ url: string; label: string }>;
-  startDate?: string; 
-  expirationDate?: string; 
-  isActive: boolean;
-  priority: number;
-  createdBy: string;
-  stats: {
-    views: number;
-    clicks: number;
-    dismissals: number;
-  };
-  version: number;
-  createdAt: string; 
-  updatedAt: string; 
 }

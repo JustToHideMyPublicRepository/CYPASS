@@ -28,7 +28,7 @@
                     Hash du document
                   </label>
                   <div class="mt-1">
-                    <input v-model="hash" type="text" name="hash" id="hash" class="input"
+                    <input v-model="hash" id="hash" name="hash" type="text" class="input"
                       placeholder="Entrez le hash SHA-256 du document" :disabled="loading" />
                   </div>
                   <p class="mt-2 text-sm text-gray-500">
@@ -79,10 +79,10 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
-import { IconArrowLeft, IconQrcode } from '@tabler/icons-vue'
+import { IconArrowLeft, IconQrcode } from '@tabler/icons-vue';
 
 const router = useRouter();
 const hash = ref('');
@@ -102,13 +102,16 @@ const verifyDocument = async () => {
   }
 };
 
-const handleQRUpload = (event) => {
-  const file = event.target.files[0];
+const handleQRUpload = (event: Event) => {
+  const input = event.target as HTMLInputElement;
+  const file = input.files?.[0];
   if (!file) return;
 
-  // Simulation pour l'instant
+  // Simulation pour l'instant: extraire le hash du QR code
+  // Dans une application réelle, vous utiliseriez une bibliothèque pour lire le QR code
+  // et extraire le hash qu'il contient.
   setTimeout(() => {
-    hash.value = '7f83b1657ff1fc53b92dc18148a1d65dfc2d4b1fa3d677284addd200126d9069';
+    hash.value = '7f83b1657ff1fc53b92dc18148a1d65dfc2d4b1fa3d677284addd200126d9069'; // Exemple de hash
   }, 500);
 };
 </script>

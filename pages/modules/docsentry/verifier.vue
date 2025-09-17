@@ -36,7 +36,10 @@
                   class="mt-4 btn btn-primary"
                   :disabled="!hash || verifying"
                 >
-                  {{ verifying ? 'Vérification...' : 'Vérifier' }}
+                  <span v-if="verifying" class="flex items-center">
+                    <IconLoader class="animate-spin h-5 w-5 mr-2" /> Vérification...
+                  </span>
+                  <span v-else>Vérifier</span>
                 </button>
               </div>
             </div>
@@ -120,9 +123,13 @@
                 ]">
                   <p>{{ verificationResult.message }}</p>
                   <div v-if="verificationResult.verified && verificationResult.document" class="mt-4">
-                    <p><strong>Nom du fichier:</strong> {{ verificationResult.document.filename }}</p>
+                    <p><strong>Nom du fichier:</strong> {{ verificationResult.document.originalName }}</p>
                     <p><strong>Date d'authentification:</strong> {{ formatDateTime(verificationResult.document.createdAt) }}</p>
                     <p><strong>Hash:</strong> {{ verificationResult.document.hash }}</p>
+                  </div>
+                  <div v-else-if="verificationResult.uploadedFile" class="mt-4">
+                    <p><strong>Fichier uploadé:</strong> {{ verificationResult.uploadedFile.filename }}</p>
+                    <p><strong>Hash calculé:</strong> {{ verificationResult.hash }}</p>
                   </div>
                 </div>
               </div>
@@ -134,20 +141,20 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref } from 'vue';
 import { useDocumentsStore } from '~/stores/documents';
-import CryptoJS from 'crypto-js';
-import { useRouter } from 'vue-router'
-import { IconArrowLeft, IconQrcode, IconFile, IconCircleCheck, IconCircleX } from '@tabler/icons-vue';
+// Removed: import CryptoJS from 'crypto-js'; // No longer needed here
+import { useRouter } from 'vue-router';
+import { IconArrowLeft, IconQrcode, IconFile, IconCircleCheck, IconCircleX, IconLoader } from '@tabler/icons-vue';
+import type { DocumentVerificationResult } from '~/types';
 
-const router = useRouter()
-
+const router = useRouter();
 const documentsStore = useDocumentsStore();
 
 const hash = ref('');
 const verifying = ref(false);
-const verificationResult = ref(null);
+const verificationResult = ref<DocumentVerificationResult | null>(null);
 
 // Vérification par hash
 const verifyByHash = async () => {
@@ -157,7 +164,7 @@ const verifyByHash = async () => {
   verificationResult.value = null;
   
   try {
-    const result = documentsStore.verifyDocument(hash.value);
+    const result = await documentsStore.verifyDocument(hash.value);
     verificationResult.value = result;
   } catch (error) {
     console.error('Erreur lors de la vérification:', error);
@@ -171,37 +178,35 @@ const verifyByHash = async () => {
 };
 
 // Vérification par QR Code
-const handleQRUpload = async (event) => {
-  const file = event.target.files[0];
+const handleQRUpload = async (event: Event) => {
+  const input = event.target as HTMLInputElement;
+  const file = input.files?.[0];
   if (!file) return;
   
-  // Implémenter la lecture du QR code - Simulation avec un hash fixe
-  hash.value = '7f83b1657ff1fc53b92dc18148a1d65dfc2d4b1fa3d677284addd200126d9069';
+  // For now, simulate QR code reading by setting a fixed hash.
+  // In a real application, you would use a library to read the QR code from the image.
+  // Example: hash.value = await readQrCode(file);
+  hash.value = '7f83b1657ff1fc53b92dc18148a1d65dfc2d4b1fa3d677284addd200126d9069'; // Simulated hash
   await verifyByHash();
 };
 
 // Vérification par document
-const handleFileUpload = async (event) => {
-  const file = event.target.files[0];
+const handleFileUpload = async (event: Event) => {
+  const input = event.target as HTMLInputElement;
+  const file = input.files?.[0];
   if (!file) return;
   
   verifying.value = true;
   verificationResult.value = null;
   
   try {
-    // Lecture et génération de hash
-    const buffer = await file.arrayBuffer();
-    const wordArray = CryptoJS.lib.WordArray.create(buffer);
-    const calculatedHash = CryptoJS.SHA256(wordArray).toString();
-    
-    // Vérifier le hash
-    hash.value = calculatedHash;
-    await verifyByHash();
+    const result = await documentsStore.verifyByFile(file);
+    verificationResult.value = result;
   } catch (error) {
-    console.error('Erreur lors du calcul du hash:', error);
+    console.error('Erreur lors de la vérification par fichier:', error);
     verificationResult.value = {
       verified: false,
-      message: 'Une erreur est survenue lors de la lecture du fichier'
+      message: 'Une erreur est survenue lors de la vérification du fichier'
     };
   } finally {
     verifying.value = false;
@@ -209,7 +214,7 @@ const handleFileUpload = async (event) => {
 };
 
 // Formater les dates
-const formatDateTime = (dateString) => {
+const formatDateTime = (dateString: string) => {
   return new Intl.DateTimeFormat('fr-FR', { 
     day: 'numeric', 
     month: 'long', 

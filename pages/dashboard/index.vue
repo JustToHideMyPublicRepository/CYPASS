@@ -5,7 +5,7 @@
       <div class="flex items-center justify-between mb-8">
         <div>
           <h1 class="text-2xl font-semibold text-gray-900">Tableau de bord</h1>
-          <p class="mt-1 text-sm text-gray-500">Bienvenue {{ user?.name }}</p>
+          <p class="mt-1 text-sm text-gray-500">Bienvenue {{ user?.firstName }}</p>
         </div>
         <div class="hidden sm:flex items-center space-x-3">
           <span
@@ -97,8 +97,8 @@
   </div>
 </template>
 
-<script setup>
-import { computed } from 'vue';
+<script setup lang="ts">
+import { computed, onMounted } from 'vue';
 import { useAuthStore } from '~/stores/auth';
 import { useDocumentsStore } from '~/stores/documents';
 import { useScansStore } from '~/stores/scans';
@@ -110,8 +110,8 @@ const documentsStore = useDocumentsStore();
 const scansStore = useScansStore();
 
 const user = computed(() => authStore.user);
-const documents = computed(() => documentsStore.getUserDocuments(user.value?.id || 0));
-const scans = computed(() => scansStore.getUserScans(user.value?.id || 0));
+const documents = computed(() => documentsStore.getUserDocuments(user.value?.id || '')); // Corrected default value for id
+const scans = computed(() => scansStore.getUserScans(user.value?.id || '')); // Corrected default value for id
 
 const averageSecurityScore = computed(() => {
   if (scans.value.length === 0) return 0;
@@ -119,12 +119,21 @@ const averageSecurityScore = computed(() => {
   return Math.round(total / scans.value.length);
 });
 
+// Fetch data on mount
+onMounted(() => {
+  if (user.value?.id) {
+    documentsStore.fetchUserDocuments();
+    // If you have a fetchUserScans action in scansStore, call it here too:
+    // scansStore.fetchUserScans();
+  }
+});
+
 // Statistiques
 const stats = [
   {
     icon: IconFileCheck,
     title: 'Documents authentifiés',
-    value: documentsStore.getUserDocuments(authStore.user?.id || 0).length, // ou documents.value.length
+    value: documents.value.length,
     trend: '12%',
     trendLabel: 'Augmentation de',
     bgColor: 'bg-primary-100',
@@ -136,7 +145,7 @@ const stats = [
   {
     icon: IconShieldCheck,
     title: 'Sites audités',
-    value: scansStore.getUserScans(authStore.user?.id || 0).length, // ou scans.value.length
+    value: scans.value.length,
     trend: '8%',
     trendLabel: 'Augmentation de',
     bgColor: 'bg-secondary-100',
@@ -177,7 +186,7 @@ const modules = [
     icon: IconFileCheck,
     title: 'DocSentry',
     description: 'Authentification de documents sensibles avec génération de QR code et certificats vérifiables.',
-    status: `${documentsStore.getUserDocuments(authStore.user?.id || 0).length} documents`, // ou `${documents.value.length} documents`,
+    status: `${documents.value.length} documents`,
     bgColor: 'bg-primary-100',
     textColor: 'text-primary-600',
     hoverColor: 'group-hover:text-primary-700',
@@ -187,7 +196,7 @@ const modules = [
     icon: IconShieldCheck,
     title: 'SecuScan',
     description: 'Audit automatisé de sites web avec analyse des vulnérabilités et recommandations de sécurité.',
-    status: `${scansStore.getUserScans(authStore.user?.id || 0).length} audits`, // ou `${scans.value.length} audits`,
+    status: `${scans.value.length} audits`,
     bgColor: 'bg-secondary-100',
     textColor: 'text-secondary-600',
     hoverColor: 'group-hover:text-secondary-700',
@@ -219,7 +228,7 @@ const modules = [
 const recentActivities = computed(() => {
   const docActivities = documents.value.map(doc => ({
     type: 'document',
-    title: `Document authentifié : ${doc.filename}`,
+    title: `Document authentifié : ${doc.originalName}`,
     description: `Hash: ${doc.hash.substring(0, 12)}...`,
     date: new Date(doc.createdAt),
     bg: 'bg-primary-100',
@@ -236,11 +245,11 @@ const recentActivities = computed(() => {
     linkTo: '/modules/secuscan',
   }));
   return [...docActivities, ...scanActivities]
-    .sort((a, b) => b.date - a.date)
+    .sort((a, b) => b.date.getTime() - a.date.getTime()) // Use getTime() for date comparison
     .slice(0, 5);
 });
 
 // Formatage des dates
-const formatDate = date => new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'short' }).format(date);
-const formatDateTime = date => new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'long', year: 'numeric', hour: 'numeric', minute: 'numeric' }).format(date);
+const formatDate = (date: Date) => new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'short' }).format(date);
+const formatDateTime = (date: Date) => new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'long', year: 'numeric', hour: 'numeric', minute: 'numeric' }).format(date);
 </script>
