@@ -61,7 +61,7 @@
                 <td class="px-6 py-4 whitespace-nowrap">
                   <div class="flex items-center">
                     <IconFileCertificate class="h-5 w-5 text-gray-400 mr-2" />
-                    <div class="text-sm font-medium text-gray-900">{{ doc.originalName }}</div>
+                    <div class="text-sm font-medium text-gray-900">{{ doc.filename }}</div>
                   </div>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
@@ -212,7 +212,10 @@
               <div>
                 <h4 class="text-sm font-medium text-gray-700">QR Code de vérification</h4>
                 <div class="mt-2 flex items-center justify-center">
-                  <img :src="newDocument.qrCodeUrl" alt="QR Code" class="h-32 w-32" />
+                  <img v-if="newDocument.qrCodeUrl" :src="newDocument.qrCodeUrl" alt="QR Code" class="h-32 w-32 object-contain" />
+                  <div v-else class="h-32 w-32 bg-gray-100 flex items-center justify-center rounded-md">
+                    <span class="text-gray-500 text-sm">QR Code non disponible</span>
+                  </div>
                 </div>
                 <p class="mt-2 text-sm text-gray-500 text-center">
                   Scannez ce code pour vérifier l'authenticité du document.
@@ -238,6 +241,18 @@
         </div>
       </div>
     </div>
+
+    <!-- Composant de message -->
+    <MessageModal
+      :show="showMessageModal"
+      :type="messageType"
+      :title="messageTitle"
+      :message="messageText"
+      :confirm-text="messageConfirmText"
+      :cancel-text="messageCancelText"
+      @confirm="handleMessageConfirm"
+      @cancel="handleMessageCancel"
+    />
   </div>
 </template>
 
@@ -246,6 +261,7 @@ import { ref, computed, onMounted } from 'vue';
 import { useAuthStore } from '~/stores/auth';
 import { useDocumentsStore } from '~/stores/documents';
 import aboutDocSentry from '~/components/modAbout/aboutDocSentry.vue'; // Corrected import
+import MessageModal from '~/components/ui/MessageModal.vue';
 import { IconShieldCheck, IconUpload, IconFileCertificate, IconX, IconCheck, IconLoader } from '@tabler/icons-vue';
 import type { Document } from '~/types';
 
@@ -260,6 +276,14 @@ const selectedFile = ref<File | null>(null);
 const processing = ref(false);
 const newDocument = ref<Document | null>(null);
 const uploadError = ref('');
+
+// État pour le composant de message
+const showMessageModal = ref(false);
+const messageType = ref<'success' | 'error' | 'warning' | 'info'>('info');
+const messageTitle = ref('');
+const messageText = ref('');
+const messageConfirmText = ref('');
+const messageCancelText = ref('Fermer');
 
 // Récupérer les documents de l'utilisateur
 const user = computed(() => authStore.user);
@@ -352,10 +376,35 @@ const viewDocument = (doc: Document) => {
 // Télécharger le certificat
 const downloadCertificate = async (docId?: string) => {
   if (!docId) return;
-  const result = await documentsStore.downloadCertificate(docId);
-  if (!result.success) {
-    alert(result.message);
+  
+  try {
+    const result = await documentsStore.downloadCertificate(docId);
+    if (result.success) {
+      showMessage('success', 'Téléchargement réussi', result.message || 'Le certificat a été téléchargé avec succès.');
+    } else {
+      showMessage('error', 'Erreur de téléchargement', result.message || 'Une erreur est survenue lors du téléchargement.');
+    }
+  } catch (error) {
+    showMessage('error', 'Erreur de téléchargement', 'Une erreur inattendue est survenue.');
   }
+};
+
+// Fonction pour afficher les messages
+const showMessage = (type: 'success' | 'error' | 'warning' | 'info', title: string, message: string, confirmText?: string) => {
+  messageType.value = type;
+  messageTitle.value = title;
+  messageText.value = message;
+  messageConfirmText.value = confirmText || '';
+  showMessageModal.value = true;
+};
+
+// Gestionnaires pour le composant de message
+const handleMessageConfirm = () => {
+  showMessageModal.value = false;
+};
+
+const handleMessageCancel = () => {
+  showMessageModal.value = false;
 };
 
 // Formater les dates

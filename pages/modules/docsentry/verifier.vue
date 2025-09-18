@@ -22,20 +22,11 @@
             <div>
               <h3 class="text-lg font-medium text-gray-900 mb-4">Vérification par hash</h3>
               <div class="mt-1">
-                <input
-                  v-model="hash"
-                  type="text"
-                  class="input"
-                  placeholder="Entrez le hash SHA-256 du document"
-                />
+                <input v-model="hash" type="text" class="input" placeholder="Entrez le hash SHA-256 du document" />
                 <p class="mt-2 text-sm text-gray-500">
                   Entrez le hash SHA-256 du document que vous souhaitez vérifier
                 </p>
-                <button 
-                  @click="verifyByHash"
-                  class="mt-4 btn btn-primary"
-                  :disabled="!hash || verifying"
-                >
+                <button @click="verifyByHash" class="mt-4 btn btn-primary" :disabled="!hash || verifying">
                   <span v-if="verifying" class="flex items-center">
                     <IconLoader class="animate-spin h-5 w-5 mr-2" /> Vérification...
                   </span>
@@ -61,9 +52,11 @@
                   <IconQrcode class="mx-auto h-12 w-12 text-gray-400" />
 
                   <div class="flex text-sm text-gray-600">
-                    <label for="qr-upload" class="relative cursor-pointer bg-white rounded-md font-medium text-primary-600 hover:text-primary-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-primary-500">
+                    <label for="qr-upload"
+                      class="relative cursor-pointer bg-white rounded-md font-medium text-primary-600 hover:text-primary-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-primary-500">
                       <span>Télécharger un QR code</span>
-                      <input id="qr-upload" name="qr-upload" type="file" class="sr-only" accept="image/*" @change="handleQRUpload">
+                      <input id="qr-upload" name="qr-upload" type="file" class="sr-only" accept="image/*"
+                        @change="handleQRUpload">
                     </label>
                   </div>
                   <p class="text-xs text-gray-500">
@@ -88,11 +81,13 @@
               <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
                 <div class="space-y-1 text-center">
                   <IconFile class="mx-auto h-12 w-12 text-gray-400" />
-                  
+
                   <div class="flex text-sm text-gray-600">
-                    <label for="file-upload" class="relative cursor-pointer bg-white rounded-md font-medium text-primary-600 hover:text-primary-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-primary-500">
+                    <label for="file-upload"
+                      class="relative cursor-pointer bg-white rounded-md font-medium text-primary-600 hover:text-primary-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-primary-500">
                       <span>Télécharger un document</span>
-                      <input id="file-upload" name="file-upload" type="file" class="sr-only" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx" @change="handleFileUpload">
+                      <input id="file-upload" name="file-upload" type="file" class="sr-only"
+                        accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx" @change="handleFileUpload">
                     </label>
                   </div>
                   <p class="text-xs text-gray-500">
@@ -123,12 +118,16 @@
                 ]">
                   <p>{{ verificationResult.message }}</p>
                   <div v-if="verificationResult.verified && verificationResult.document" class="mt-4">
-                    <p><strong>Nom du fichier:</strong> {{ verificationResult.document.originalName }}</p>
-                    <p><strong>Date d'authentification:</strong> {{ formatDateTime(verificationResult.document.createdAt) }}</p>
+                    <p><strong>Nom du fichier:</strong> {{ verificationResult.document.filename }}</p>
                     <p><strong>Hash:</strong> {{ verificationResult.document.hash }}</p>
+                    <p><strong>Date d'authentification:</strong> {{
+                      formatDateTime(verificationResult.document.createdAt) }}</p>
+                    <p><strong>Taille du fichier:</strong> {{ formatBytes(verificationResult.document.size) }}</p>
+                    <p><strong>Type du fichier:</strong> {{ verificationResult.document.mimeType }}</p>
                   </div>
                   <div v-else-if="verificationResult.uploadedFile" class="mt-4">
                     <p><strong>Fichier uploadé:</strong> {{ verificationResult.uploadedFile.filename }}</p>
+                    <p><strong>Taille du fichier:</strong> {{ formatBytes(verificationResult.uploadedFile.size) }}</p>
                     <p><strong>Hash calculé:</strong> {{ verificationResult.hash }}</p>
                   </div>
                 </div>
@@ -144,7 +143,6 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { useDocumentsStore } from '~/stores/documents';
-// Removed: import CryptoJS from 'crypto-js'; // No longer needed here
 import { useRouter } from 'vue-router';
 import { IconArrowLeft, IconQrcode, IconFile, IconCircleCheck, IconCircleX, IconLoader } from '@tabler/icons-vue';
 import type { DocumentVerificationResult } from '~/types';
@@ -156,13 +154,26 @@ const hash = ref('');
 const verifying = ref(false);
 const verificationResult = ref<DocumentVerificationResult | null>(null);
 
+// Format taille de fichier
+const formatBytes = (bytes: number, decimals = 2) => {
+  if (bytes === 0) return '0 Bytes';
+
+  const k = 1024;
+  const dm = decimals < 0 ? 0 : decimals;
+  const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
+
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+};
+
 // Vérification par hash
 const verifyByHash = async () => {
   if (!hash.value) return;
-  
+
   verifying.value = true;
   verificationResult.value = null;
-  
+
   try {
     const result = await documentsStore.verifyDocument(hash.value);
     verificationResult.value = result;
@@ -182,12 +193,23 @@ const handleQRUpload = async (event: Event) => {
   const input = event.target as HTMLInputElement;
   const file = input.files?.[0];
   if (!file) return;
-  
-  // For now, simulate QR code reading by setting a fixed hash.
-  // In a real application, you would use a library to read the QR code from the image.
-  // Example: hash.value = await readQrCode(file);
-  hash.value = '7f83b1657ff1fc53b92dc18148a1d65dfc2d4b1fa3d677284addd200126d9069'; // Simulated hash
-  await verifyByHash();
+
+  verifying.value = true;
+  verificationResult.value = null;
+
+  try {
+    const result = await documentsStore.verifyByQrCode(file);
+    verificationResult.value = result;
+  } catch (error) {
+    console.error('Erreur lors de la vérification par QR Code:', error);
+    verificationResult.value = {
+      verified: false,
+      message: 'Une erreur est survenue lors de la vérification du QR Code'
+    };
+  } finally {
+    verifying.value = false;
+    if (input) input.value = '';
+  }
 };
 
 // Vérification par document
@@ -195,10 +217,10 @@ const handleFileUpload = async (event: Event) => {
   const input = event.target as HTMLInputElement;
   const file = input.files?.[0];
   if (!file) return;
-  
+
   verifying.value = true;
   verificationResult.value = null;
-  
+
   try {
     const result = await documentsStore.verifyByFile(file);
     verificationResult.value = result;
@@ -210,14 +232,15 @@ const handleFileUpload = async (event: Event) => {
     };
   } finally {
     verifying.value = false;
+    if (input) input.value = '';
   }
 };
 
 // Formater les dates
 const formatDateTime = (dateString: string) => {
-  return new Intl.DateTimeFormat('fr-FR', { 
-    day: 'numeric', 
-    month: 'long', 
+  return new Intl.DateTimeFormat('fr-FR', {
+    day: 'numeric',
+    month: 'long',
     year: 'numeric',
     hour: 'numeric',
     minute: 'numeric'

@@ -88,8 +88,78 @@
           <div class="flow-root">
             <ul class="-my-5 divide-y divide-gray-200">
               <DashboardItem v-for="(activity, index) in recentActivities" :key="index" :activity="activity"
-                :formatDate="formatDate" />
+                :formatDate="formatDate" @view-document="viewDocument" />
             </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal de détails du document -->
+    <div v-if="showDocumentModal && selectedDocument" class="fixed inset-0 overflow-y-auto z-50">
+      <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div class="fixed inset-0 transition-opacity" aria-hidden="true">
+          <div class="absolute inset-0 bg-gray-500 opacity-75"></div>
+        </div>
+        
+        <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+        
+        <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+          <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+            <div class="sm:flex sm:items-start">
+              <div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-green-100 sm:mx-0 sm:h-10 sm:w-10">
+                <IconCheck class="h-6 w-6 text-green-600" />
+              </div>
+              <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
+                <h3 class="text-lg leading-6 font-medium text-gray-900">
+                  Document authentifié
+                </h3>
+                <div class="mt-2">
+                  <p class="text-sm text-gray-500">
+                    Votre document a été authentifié avec succès. Vous pouvez maintenant télécharger le certificat ou accéder à la page de vérification.
+                  </p>
+                </div>
+              </div>
+            </div>
+            
+            <div class="mt-5">
+              <div class="mb-4">
+                <h4 class="text-sm font-medium text-gray-700">Informations d'authentification</h4>
+                <div class="mt-2 bg-gray-50 p-3 rounded-md">
+                  <p class="text-sm text-gray-600">
+                    <span class="font-medium">Hash:</span> {{ selectedDocument.hash }}
+                  </p>
+                  <p class="text-sm text-gray-600 mt-1">
+                    <span class="font-medium">Date:</span> {{ formatDateTime(new Date(selectedDocument.createdAt)) }}
+                  </p>
+                </div>
+              </div>
+              
+              <div v-if="selectedDocument.qrCodeUrl">
+                <h4 class="text-sm font-medium text-gray-700">QR Code de vérification</h4>
+                <div class="mt-2 flex items-center justify-center">
+                  <img :src="selectedDocument.qrCodeUrl" alt="QR Code" class="h-32 w-32" />
+                </div>
+                <p class="mt-2 text-sm text-gray-500 text-center">
+                  Scannez ce code pour vérifier l'authenticité du document.
+                </p>
+              </div>
+            </div>
+          </div>
+          
+          <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+            <button 
+              @click="downloadCertificate(selectedDocument?.id)" 
+              class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-primary-600 text-base font-medium text-white hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 sm:ml-3 sm:w-auto sm:text-sm"
+            >
+              Télécharger le certificat
+            </button>
+            <button 
+              @click="showDocumentModal = false; selectedDocument = null;" 
+              class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
+            >
+              Fermer
+            </button>
           </div>
         </div>
       </div>
@@ -98,16 +168,21 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { useAuthStore } from '~/stores/auth';
 import { useDocumentsStore } from '~/stores/documents';
 import { useScansStore } from '~/stores/scans';
 import DashboardItem from '~/components/activities/DashboardItem.vue';
-import { IconFileCertificate, IconShieldSearch, IconClock, IconShieldCheck, IconChevronRight, IconArrowUp, IconFileCheck, IconAlertCircle, IconEyeCheck, IconCircleDashedPercentage } from '@tabler/icons-vue';
+import { IconFileCertificate, IconShieldSearch, IconClock, IconShieldCheck, IconChevronRight, IconArrowUp, IconFileCheck, IconAlertCircle, IconEyeCheck, IconCircleDashedPercentage, IconCheck } from '@tabler/icons-vue';
+import type { Document } from '~/types';
 
 const authStore = useAuthStore();
 const documentsStore = useDocumentsStore();
 const scansStore = useScansStore();
+
+// État pour la modale de document
+const showDocumentModal = ref(false);
+const selectedDocument = ref<Document | null>(null);
 
 const user = computed(() => authStore.user);
 const documents = computed(() => documentsStore.getUserDocuments(user.value?.id || '')); // Corrected default value for id
@@ -227,15 +302,18 @@ const modules = [
 // Activity feed
 const recentActivities = computed(() => {
   const docActivities = documents.value.map(doc => ({
+    id: doc.id,
     type: 'document',
-    title: `Document authentifié : ${doc.originalName}`,
+    title: `Document authentifié : ${doc.filename}`,
     description: `Hash: ${doc.hash.substring(0, 12)}...`,
     date: new Date(doc.createdAt),
     bg: 'bg-primary-100',
     icon: IconFileCertificate,
-    linkTo: '/modules/docsentry',
+    linkTo: null, 
+    document: doc, 
   }));
   const scanActivities = scans.value.map(scan => ({
+    id: scan.id,
     type: 'scan',
     title: `Audit de sécurité : ${scan.url}`,
     description: `Score: ${scan.score}/100, ${scan.vulnerabilities.length} vulnérabilités détectées`,
@@ -248,6 +326,20 @@ const recentActivities = computed(() => {
     .sort((a, b) => b.date.getTime() - a.date.getTime()) // Use getTime() for date comparison
     .slice(0, 5);
 });
+
+// Voir les détails d'un document
+const viewDocument = (activity: any) => {
+  if (activity.type === 'document' && activity.document) {
+    selectedDocument.value = activity.document;
+    showDocumentModal.value = true;
+  }
+};
+
+// Télécharger le certificat
+const downloadCertificate = async (docId?: string) => {
+  if (!docId) return;
+  await documentsStore.downloadCertificate(docId);
+};
 
 // Formatage des dates
 const formatDate = (date: Date) => new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'short' }).format(date);

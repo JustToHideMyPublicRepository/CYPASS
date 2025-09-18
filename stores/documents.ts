@@ -49,6 +49,17 @@ export const useDocumentsStore = defineStore('documents', {
     async verifyDocument(hash: string): Promise<DocumentVerificationResult> {
       this.loading = true;
       const config = useRuntimeConfig();
+
+      const hashPattern = /^[0-9a-fA-F]{64}$/;
+      if (!hashPattern.test(hash)) {
+        this.loading = false;
+        return {
+          verified: false,
+          message: 'Le hash SHA-256 doit être une chaîne de 64 caractères hexadécimaux.',
+          hash: hash,
+        };
+      }
+
       try {
         const response = await $fetch<DocumentVerificationResult>(
           `${config.public.apiBaseUrl}/documents/verify/${hash}`,
@@ -89,6 +100,32 @@ export const useDocumentsStore = defineStore('documents', {
         return {
           verified: false,
           message: error.data?.message || 'Une erreur est survenue lors de la vérification par fichier.',
+        };
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    async verifyByQrCode(file: File): Promise<DocumentVerificationResult> {
+      this.loading = true;
+      const config = useRuntimeConfig();
+      try {
+        const formData = new FormData();
+        formData.append('qrimage', file); 
+
+        const response = await $fetch<DocumentVerificationResult>(
+          `${config.public.apiBaseUrl}/documents/verify/qr`,
+          {
+            method: 'POST',
+            body: formData,
+          }
+        );
+        return response;
+      } catch (error: any) {
+        console.error('Erreur vérification par QR Code:', error);
+        return {
+          verified: false,
+          message: error.data?.message || 'Une erreur est survenue lors de la vérification par QR Code.',
         };
       } finally {
         this.loading = false;
@@ -154,7 +191,7 @@ export const useDocumentsStore = defineStore('documents', {
 
   getters: {
     getUserDocuments: (state) => (userId: string) => {
-      return state.documents.filter((doc) => doc.userId === userId);
+      return state.documents; 
     },
 
     getDocumentById: (state) => (id: string) => {
@@ -162,3 +199,4 @@ export const useDocumentsStore = defineStore('documents', {
     },
   },
 });
+
