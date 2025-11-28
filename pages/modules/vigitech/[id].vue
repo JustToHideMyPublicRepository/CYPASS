@@ -229,7 +229,7 @@ Recommandations :
   isAnonymous: false,
   category: 'Vulnérabilité',
   severity: 'critique' as const,
-  status: 'published' as const,
+  status: 'published' as 'published' | 'reported' | 'blocked' | 'suspended',
   createdAt: '2025-11-20T10:30:00Z',
   views: 1247,
   reportCount: 0,
