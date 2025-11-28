@@ -1,0 +1,5 @@
+export { default as HeroSection } from './HeroSection.vue'
+export { default as ModuleSection } from './ModuleSection.vue'
+export { default as FeaturesSection } from './FeaturesSection.vue'
+export { default as TestimonySection } from './TestimonySection.vue'
+export { default as CTASection } from './CTASection.vue'
