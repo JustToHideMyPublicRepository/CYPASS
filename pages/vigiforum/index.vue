@@ -284,20 +284,22 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useVigitechStore } from '~/stores/vigitech'
+import { useAuthStore } from '~/stores/auth'
 import PublicationFormModal from '~/components/vigitech/PublicationFormModal.vue'
 import type { PublicationFormData } from '~/components/vigitech/PublicationFormModal.vue'
 
-// Store
+// Stores
 const vigitechStore = useVigitechStore()
+const authStore = useAuthStore()
 
-// Mock authentication state
-const isAuthenticated = ref(true)
+// Authentication state from store
+const isAuthenticated = computed(() => authStore.isAuthenticated)
 
 // Modal state
 const showPublicationModal = ref(false)
 
 // View mode
-const viewMode = ref<'categories' | 'severity' | 'all'>('categories')
+const viewMode = ref<'categories' | 'severity' | 'all'>('all') // Default to 'all' to show publications immediately
 
 // Search and filters
 const searchQuery = ref('')

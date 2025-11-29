@@ -201,71 +201,27 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
+import { useVigitechStore } from '~/stores/vigitech'
+import { useAuthStore } from '~/stores/auth'
 
 const route = useRoute()
-const publicationId = route.params.id
+const router = useRouter()
+const vigitechStore = useVigitechStore()
+const authStore = useAuthStore()
 
-// Mock publication data
-const publication = ref({
-  id: publicationId,
-  title: 'Nouvelle vulnérabilité critique dans Apache Log4j',
-  content: `Une faille de sécurité majeure permettant l'exécution de code à distance a été découverte dans Apache Log4j, une bibliothèque de journalisation Java largement utilisée.
+// Get publication ID from route
+const publicationId = computed(() => route.params.id as string)
 
-Cette vulnérabilité, identifiée comme CVE-2021-44228, permet à un attaquant distant d'exécuter du code arbitraire sur le système cible sans authentification préalable.
+// Get publication from store
+const publication = computed(() => vigitechStore.getPublicationById(publicationId.value))
 
-Points clés :
-- Sévérité : Critique (CVSS 10.0)
-- Versions affectées : Log4j 2.0-beta9 à 2.14.1
-- Exploitation : Triviale, nombreux exploits publics disponibles
-- Impact : Exécution de code à distance, compromission totale du système
-
-Recommandations :
-1. Mettre à jour vers Log4j version 2.15.0 ou supérieure immédiatement
-2. Si la mise à jour n'est pas possible, désactiver les lookups JNDI
-3. Surveiller les logs pour détecter les tentatives d'exploitation
-4. Effectuer une analyse de sécurité complète des systèmes potentiellement affectés`,
-  author: 'SecExpert',
-  isAnonymous: false,
-  category: 'Vulnérabilité',
-  severity: 'critique' as const,
-  status: 'published' as 'published' | 'reported' | 'blocked' | 'suspended',
-  createdAt: '2025-11-20T10:30:00Z',
-  views: 1247,
-  reportCount: 0,
-  shares: 34,
-  moderationInfo: null as any
-})
-
-// Mock comments
-const comments = ref([
-  {
-    id: 'c1',
-    content: 'Excellente analyse. Nous avons détecté plusieurs tentatives d\'exploitation sur nos serveurs. La mise à jour est effectivement critique.',
-    author: 'AdminSys',
-    isAnonymous: false,
-    createdAt: '2025-11-20T11:45:00Z',
-    status: 'published' as const
-  },
-  {
-    id: 'c2',
-    content: 'Merci pour le partage. Quelqu\'un a-t-il des IOCs (Indicators of Compromise) à partager pour la détection ?',
-    author: 'Utilisateur anonyme',
-    isAnonymous: true,
-    createdAt: '2025-11-20T13:20:00Z',
-    status: 'published' as const
-  },
-  {
-    id: 'c3',
-    content: 'Nous avons publié un script de détection sur notre GitHub. Très utile pour identifier les serveurs vulnérables.',
-    author: 'CyberDefense',
-    isAnonymous: false,
-    createdAt: '2025-11-20T14:30:00Z',
-    status: 'published' as const
-  }
-])
+// Get comments from store for this publication
+const comments = computed(() => vigitechStore.getCommentsByPublicationId(publicationId.value))
 
 const severityClass = computed(() => {
+  if (!publication.value) return ''
+
   const classes = {
     'critique': 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300',
     'élevée': 'bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300',
@@ -277,6 +233,8 @@ const severityClass = computed(() => {
 })
 
 const statusClass = computed(() => {
+  if (!publication.value) return ''
+
   const classes = {
     'published': 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300',
     'reported': 'bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300',
@@ -287,6 +245,8 @@ const statusClass = computed(() => {
 })
 
 const statusLabel = computed(() => {
+  if (!publication.value) return ''
+
   const labels = {
     'published': 'Publié',
     'reported': 'Signalé',
@@ -307,28 +267,33 @@ const formatDate = (date: string) => {
 }
 
 const handleEdit = () => {
-  console.log('Edit publication:', publicationId)
+  console.log('Edit publication:', publicationId.value)
+  // TODO: Navigate to edit page or open edit modal
 }
 
 const handleDelete = () => {
   if (confirm('Êtes-vous sûr de vouloir supprimer cette publication ? Cette action est irréversible.')) {
-    console.log('Delete publication:', publicationId)
+    vigitechStore.deletePublication(publicationId.value)
+    router.push('/modules/vigitech/publications')
   }
 }
 
 const handleUnblock = () => {
+  if (!publication.value) return
+
   if (confirm('Souhaitez-vous débloquer cette publication ?')) {
-    console.log('Unblock publication:', publicationId)
+    vigitechStore.updatePublicationStatus(publicationId.value, 'published')
   }
 }
 
 const handleEditComment = (commentId: string) => {
   console.log('Edit comment:', commentId)
+  // TODO: Implement comment editing
 }
 
 const handleDeleteComment = (commentId: string) => {
   if (confirm('Êtes-vous sûr de vouloir supprimer ce commentaire ?')) {
-    console.log('Delete comment:', commentId)
+    vigitechStore.deleteComment(commentId)
   }
 }
 
